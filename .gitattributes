@@ -1,0 +1,6 @@
+exampleoc/**/*.go linguist-generated=true
+internal/exampleocconfig/**/*.go linguist-generated=true
+internal/exampleocunordered/**/*.go linguist-generated=true
+internal/examplesetorigin/**/*.go linguist-generated=true
+internal/uexampleoc/**/*.go linguist-generated=true
+
