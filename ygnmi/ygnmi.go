@@ -416,7 +416,7 @@ var (
 	// ErrNotPresent is returned by Get when there are no a values at a path.
 	ErrNotPresent = fmt.Errorf("value not present")
 	// Continue should returned by predicates to indicate the condition is not reached.
-	Continue = fmt.Errorf("condition not true")
+	Continue = fmt.Errorf("condition not true") //nolint:staticcheck
 )
 
 // Get fetches the value of a SingletonQuery with a ONCE subscription,
@@ -775,6 +775,21 @@ func (sb *SetBatch) Set(ctx context.Context, c *Client, opts ...Option) (*Result
 	return responseToResult(resp), err
 }
 
+// String returns a string representation of the queued operations in the SetBatch.
+func (sb *SetBatch) String() string {
+	req := &gpb.SetRequest{}
+	for _, op := range sb.ops {
+		path, err := resolvePath(op.path)
+		if err != nil {
+			return fmt.Sprintf("error resolving path %v: %v", op.path, err)
+		}
+		if err := populateSetRequest(req, path, op.val, op.mode, op.shadowpath, op.isLeaf, op.compressInfo); err != nil {
+			return fmt.Sprintf("error populating set request for path %v: %v", op.path, err)
+		}
+	}
+	return prettySetRequest(req)
+}
+
 // BatchUpdate stores an update operation in the SetBatch.
 func BatchUpdate[T any](sb *SetBatch, q ConfigQuery[T], val T) {
 	var setVal interface{} = val
@@ -827,18 +842,18 @@ func BatchUnionReplace[T any](sb *SetBatch, q ConfigQuery[T], val T) {
 
 // BatchUnionReplaceCLI stores a CLI union_replace operation in the SetBatch.
 //
-//   - nos is the name of the Network operating system.
-//     "_cli" is appended to it to form the origin, see
+//   - origin is the name of the schema as defined in
 //     https://github.com/openconfig/reference/blob/master/rpc/gnmi/gnmi-union_replace.md#24-native-cli-configuration-cli
 //   - ascii is the full CLI text.
 //
 // https://github.com/openconfig/reference/blob/master/rpc/gnmi/gnmi-union_replace.md
-func BatchUnionReplaceCLI(sb *SetBatch, nos, ascii string) {
+func BatchUnionReplaceCLI(sb *SetBatch, origin, ascii string) {
 	ps := NewDeviceRootBase()
-	ps.PutCustomData(OriginOverride, nos+"_cli")
+	ps.PutCustomData(OriginOverride, origin)
+
 	sb.ops = append(sb.ops, &batchOp{
 		path:         ps,
-		val:          ascii,
+		val:          cliASCIIConfig(ascii),
 		mode:         unionreplacePath,
 		shadowpath:   false,
 		compressInfo: nil,
@@ -982,12 +997,14 @@ func NewReconciler[T ygot.GoStruct](c *Client, q ConfigQuery[T], opts ...Option)
 		rootState: state,
 		c:         c,
 		opts:      opts,
-		errCh:     make(chan error),
+		// errCh has a buffer size of 1 so Start can send a subscribe error
+		// before the caller calls Await.
+		errCh: make(chan error, 1),
 	}, nil
 }
 
 // ReconcilerAbortErr stops the reconcilation loop.
-var ReconcilerAbortErr = fmt.Errorf("reconciler abort")
+var ReconcilerAbortErr = fmt.Errorf("reconciler abort") //nolint:staticcheck
 
 // Reconciler subscribes to a non-leaf config query, updates to the path invoke a callback function.
 // The callback function accepts a GoStruct for the config and state types for the root query.
@@ -1048,6 +1065,8 @@ func (r *Reconciler[T]) Start(ctx context.Context, fn func(cfg *Value[T], state 
 	sub, err := subscribe(ctx, r.c, r.rootCfg, gpb.SubscriptionList_STREAM, resolvedOpts)
 	if err != nil {
 		cancel()
+		// Because errCh has a buffer size of 1, Start can send err here before
+		// the caller calls Await.
 		r.errCh <- err
 		return
 	}

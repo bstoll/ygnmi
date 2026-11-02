@@ -9,6 +9,7 @@ using the following YANG input files:
   - ../../pathgen/testdata/yang/openconfig-simple.yang
   - ../../pathgen/testdata/yang/openconfig-withlistval.yang
   - ../../pathgen/testdata/yang/openconfig-nested.yang
+  - ../../pathgen/testdata/yang/openconfig-unione.yang
 
 Imported modules were sourced from:
 */
@@ -437,7 +438,8 @@ func (n *OpenconfigSimple_Parent_Child_ConfigPath) Five() *OpenconfigSimple_Pare
 		ps,
 		func(gs ygot.ValidatedGoStruct) (float32, bool) {
 			ret := gs.(*oc.OpenconfigSimple_Parent_Child_Config).Five
-			return ygot.BinaryToFloat32(ret), !reflect.ValueOf(ret).IsZero()
+			v := reflect.ValueOf(ret)
+			return ygot.BinaryToFloat32(ret), v.IsValid() && !v.IsZero()
 		},
 		func() ygot.ValidatedGoStruct { return new(oc.OpenconfigSimple_Parent_Child_Config) },
 		func() *ytypes.Schema {
@@ -480,7 +482,8 @@ func (n *OpenconfigSimple_Parent_Child_ConfigPathAny) Five() *OpenconfigSimple_P
 		ps,
 		func(gs ygot.ValidatedGoStruct) (float32, bool) {
 			ret := gs.(*oc.OpenconfigSimple_Parent_Child_Config).Five
-			return ygot.BinaryToFloat32(ret), !reflect.ValueOf(ret).IsZero()
+			v := reflect.ValueOf(ret)
+			return ygot.BinaryToFloat32(ret), v.IsValid() && !v.IsZero()
 		},
 		func() ygot.ValidatedGoStruct { return new(oc.OpenconfigSimple_Parent_Child_Config) },
 		func() *ytypes.Schema {
@@ -523,7 +526,8 @@ func (n *OpenconfigSimple_Parent_Child_ConfigPath) Four() *OpenconfigSimple_Pare
 		ps,
 		func(gs ygot.ValidatedGoStruct) (oc.Binary, bool) {
 			ret := gs.(*oc.OpenconfigSimple_Parent_Child_Config).Four
-			return ret, !reflect.ValueOf(ret).IsZero()
+			v := reflect.ValueOf(ret)
+			return ret, v.IsValid() && !v.IsZero()
 		},
 		func() ygot.ValidatedGoStruct { return new(oc.OpenconfigSimple_Parent_Child_Config) },
 		func() *ytypes.Schema {
@@ -566,7 +570,8 @@ func (n *OpenconfigSimple_Parent_Child_ConfigPathAny) Four() *OpenconfigSimple_P
 		ps,
 		func(gs ygot.ValidatedGoStruct) (oc.Binary, bool) {
 			ret := gs.(*oc.OpenconfigSimple_Parent_Child_Config).Four
-			return ret, !reflect.ValueOf(ret).IsZero()
+			v := reflect.ValueOf(ret)
+			return ret, v.IsValid() && !v.IsZero()
 		},
 		func() ygot.ValidatedGoStruct { return new(oc.OpenconfigSimple_Parent_Child_Config) },
 		func() *ytypes.Schema {
@@ -703,7 +708,8 @@ func (n *OpenconfigSimple_Parent_Child_ConfigPath) Six() *OpenconfigSimple_Paren
 		ps,
 		func(gs ygot.ValidatedGoStruct) ([]float32, bool) {
 			ret := gs.(*oc.OpenconfigSimple_Parent_Child_Config).Six
-			return binarySliceToFloatSlice(ret), !reflect.ValueOf(ret).IsZero()
+			v := reflect.ValueOf(ret)
+			return binarySliceToFloatSlice(ret), v.IsValid() && !v.IsZero()
 		},
 		func() ygot.ValidatedGoStruct { return new(oc.OpenconfigSimple_Parent_Child_Config) },
 		func() *ytypes.Schema {
@@ -746,7 +752,8 @@ func (n *OpenconfigSimple_Parent_Child_ConfigPathAny) Six() *OpenconfigSimple_Pa
 		ps,
 		func(gs ygot.ValidatedGoStruct) ([]float32, bool) {
 			ret := gs.(*oc.OpenconfigSimple_Parent_Child_Config).Six
-			return binarySliceToFloatSlice(ret), !reflect.ValueOf(ret).IsZero()
+			v := reflect.ValueOf(ret)
+			return binarySliceToFloatSlice(ret), v.IsValid() && !v.IsZero()
 		},
 		func() ygot.ValidatedGoStruct { return new(oc.OpenconfigSimple_Parent_Child_Config) },
 		func() *ytypes.Schema {
@@ -789,7 +796,8 @@ func (n *OpenconfigSimple_Parent_Child_ConfigPath) Three() *OpenconfigSimple_Par
 		ps,
 		func(gs ygot.ValidatedGoStruct) (oc.E_Simple_Parent_Child_Config_Three, bool) {
 			ret := gs.(*oc.OpenconfigSimple_Parent_Child_Config).Three
-			return ret, !reflect.ValueOf(ret).IsZero()
+			v := reflect.ValueOf(ret)
+			return ret, v.IsValid() && !v.IsZero()
 		},
 		func() ygot.ValidatedGoStruct { return new(oc.OpenconfigSimple_Parent_Child_Config) },
 		func() *ytypes.Schema {
@@ -832,7 +840,8 @@ func (n *OpenconfigSimple_Parent_Child_ConfigPathAny) Three() *OpenconfigSimple_
 		ps,
 		func(gs ygot.ValidatedGoStruct) (oc.E_Simple_Parent_Child_Config_Three, bool) {
 			ret := gs.(*oc.OpenconfigSimple_Parent_Child_Config).Three
-			return ret, !reflect.ValueOf(ret).IsZero()
+			v := reflect.ValueOf(ret)
+			return ret, v.IsValid() && !v.IsZero()
 		},
 		func() ygot.ValidatedGoStruct { return new(oc.OpenconfigSimple_Parent_Child_Config) },
 		func() *ytypes.Schema {
@@ -1006,7 +1015,8 @@ func (n *OpenconfigSimple_Parent_Child_StatePath) Five() *OpenconfigSimple_Paren
 		ps,
 		func(gs ygot.ValidatedGoStruct) (float32, bool) {
 			ret := gs.(*oc.OpenconfigSimple_Parent_Child_State).Five
-			return ygot.BinaryToFloat32(ret), !reflect.ValueOf(ret).IsZero()
+			v := reflect.ValueOf(ret)
+			return ygot.BinaryToFloat32(ret), v.IsValid() && !v.IsZero()
 		},
 		func() ygot.ValidatedGoStruct { return new(oc.OpenconfigSimple_Parent_Child_State) },
 		func() *ytypes.Schema {
@@ -1049,7 +1059,8 @@ func (n *OpenconfigSimple_Parent_Child_StatePathAny) Five() *OpenconfigSimple_Pa
 		ps,
 		func(gs ygot.ValidatedGoStruct) (float32, bool) {
 			ret := gs.(*oc.OpenconfigSimple_Parent_Child_State).Five
-			return ygot.BinaryToFloat32(ret), !reflect.ValueOf(ret).IsZero()
+			v := reflect.ValueOf(ret)
+			return ygot.BinaryToFloat32(ret), v.IsValid() && !v.IsZero()
 		},
 		func() ygot.ValidatedGoStruct { return new(oc.OpenconfigSimple_Parent_Child_State) },
 		func() *ytypes.Schema {
@@ -1092,7 +1103,8 @@ func (n *OpenconfigSimple_Parent_Child_StatePath) Four() *OpenconfigSimple_Paren
 		ps,
 		func(gs ygot.ValidatedGoStruct) (oc.Binary, bool) {
 			ret := gs.(*oc.OpenconfigSimple_Parent_Child_State).Four
-			return ret, !reflect.ValueOf(ret).IsZero()
+			v := reflect.ValueOf(ret)
+			return ret, v.IsValid() && !v.IsZero()
 		},
 		func() ygot.ValidatedGoStruct { return new(oc.OpenconfigSimple_Parent_Child_State) },
 		func() *ytypes.Schema {
@@ -1135,7 +1147,8 @@ func (n *OpenconfigSimple_Parent_Child_StatePathAny) Four() *OpenconfigSimple_Pa
 		ps,
 		func(gs ygot.ValidatedGoStruct) (oc.Binary, bool) {
 			ret := gs.(*oc.OpenconfigSimple_Parent_Child_State).Four
-			return ret, !reflect.ValueOf(ret).IsZero()
+			v := reflect.ValueOf(ret)
+			return ret, v.IsValid() && !v.IsZero()
 		},
 		func() ygot.ValidatedGoStruct { return new(oc.OpenconfigSimple_Parent_Child_State) },
 		func() *ytypes.Schema {
@@ -1272,7 +1285,8 @@ func (n *OpenconfigSimple_Parent_Child_StatePath) Six() *OpenconfigSimple_Parent
 		ps,
 		func(gs ygot.ValidatedGoStruct) ([]float32, bool) {
 			ret := gs.(*oc.OpenconfigSimple_Parent_Child_State).Six
-			return binarySliceToFloatSlice(ret), !reflect.ValueOf(ret).IsZero()
+			v := reflect.ValueOf(ret)
+			return binarySliceToFloatSlice(ret), v.IsValid() && !v.IsZero()
 		},
 		func() ygot.ValidatedGoStruct { return new(oc.OpenconfigSimple_Parent_Child_State) },
 		func() *ytypes.Schema {
@@ -1315,7 +1329,8 @@ func (n *OpenconfigSimple_Parent_Child_StatePathAny) Six() *OpenconfigSimple_Par
 		ps,
 		func(gs ygot.ValidatedGoStruct) ([]float32, bool) {
 			ret := gs.(*oc.OpenconfigSimple_Parent_Child_State).Six
-			return binarySliceToFloatSlice(ret), !reflect.ValueOf(ret).IsZero()
+			v := reflect.ValueOf(ret)
+			return binarySliceToFloatSlice(ret), v.IsValid() && !v.IsZero()
 		},
 		func() ygot.ValidatedGoStruct { return new(oc.OpenconfigSimple_Parent_Child_State) },
 		func() *ytypes.Schema {
@@ -1358,7 +1373,8 @@ func (n *OpenconfigSimple_Parent_Child_StatePath) Three() *OpenconfigSimple_Pare
 		ps,
 		func(gs ygot.ValidatedGoStruct) (oc.E_Simple_Parent_Child_Config_Three, bool) {
 			ret := gs.(*oc.OpenconfigSimple_Parent_Child_State).Three
-			return ret, !reflect.ValueOf(ret).IsZero()
+			v := reflect.ValueOf(ret)
+			return ret, v.IsValid() && !v.IsZero()
 		},
 		func() ygot.ValidatedGoStruct { return new(oc.OpenconfigSimple_Parent_Child_State) },
 		func() *ytypes.Schema {
@@ -1401,7 +1417,8 @@ func (n *OpenconfigSimple_Parent_Child_StatePathAny) Three() *OpenconfigSimple_P
 		ps,
 		func(gs ygot.ValidatedGoStruct) (oc.E_Simple_Parent_Child_Config_Three, bool) {
 			ret := gs.(*oc.OpenconfigSimple_Parent_Child_State).Three
-			return ret, !reflect.ValueOf(ret).IsZero()
+			v := reflect.ValueOf(ret)
+			return ret, v.IsValid() && !v.IsZero()
 		},
 		func() ygot.ValidatedGoStruct { return new(oc.OpenconfigSimple_Parent_Child_State) },
 		func() *ytypes.Schema {

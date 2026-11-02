@@ -3603,6 +3603,44 @@ func TestCollectAll(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("unionLeaf delete", func(t *testing.T) {
+		unionQ := exampleocpath.Root().ComponentAny().Type().State()
+		unionPath := testutil.GNMIPath(t, "/platform/component[name=test]/state/type")
+		fakeGNMI.Stub().Notification(&gpb.Notification{
+			Timestamp: startTime.Add(time.Millisecond).UnixNano(),
+			Update: []*gpb.Update{{
+				Path: unionPath,
+				Val:  &gpb.TypedValue{Value: &gpb.TypedValue_StringVal{StringVal: "CARD"}},
+			}},
+		}).Sync().Notification(&gpb.Notification{
+			Timestamp: startTime.UnixNano(),
+			Delete:    []*gpb.Path{unionPath},
+		})
+		wantVals := []*ygnmi.Value[exampleoc.Component_Type_Union]{
+			(&ygnmi.Value[exampleoc.Component_Type_Union]{
+				Timestamp: startTime.Add(time.Millisecond),
+				Path:      unionPath,
+			}).SetVal(exampleoc.Unione_HARDWARE_CARD),
+			{
+				Timestamp: startTime,
+				Path:      unionPath,
+			},
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+
+		vals, err := ygnmi.CollectAll(ctx, client, unionQ).Await()
+		if !errors.Is(err, io.EOF) {
+			t.Fatalf("Await() returned unexpected err: %s", err)
+		}
+		for _, val := range vals {
+			checkJustReceived(t, val.RecvTimestamp)
+		}
+		if diff := cmp.Diff(wantVals, vals, cmpopts.IgnoreFields(ygnmi.Value[exampleoc.Component_Type_Union]{}, "RecvTimestamp"), cmp.AllowUnexported(ygnmi.Value[exampleoc.Component_Type_Union]{}), protocmp.Transform()); diff != "" {
+			t.Errorf("Await() returned unexpected value (-want,+got):\n%s", diff)
+		}
+	})
 }
 
 func TestUpdate(t *testing.T) {
@@ -4894,7 +4932,7 @@ func TestSetBatch(t *testing.T) {
 				Path: testutil.GNMIPath(t, "parent/child/config/one"),
 				Val:  &gpb.TypedValue{Value: &gpb.TypedValue_JsonIetfVal{JsonIetfVal: []byte("\"baz\"")}},
 			}, {
-				Path: &gpb.Path{Origin: "openos_cli"},
+				Path: &gpb.Path{Origin: "openos"},
 				Val:  &gpb.TypedValue{Value: &gpb.TypedValue_AsciiVal{AsciiVal: "open sesame"}},
 			}},
 		},
@@ -5130,7 +5168,7 @@ func TestWatchCancel(t *testing.T) {
 		//nolint:errcheck // Don't care about this error.
 		s.Serve(l)
 	}()
-	conn, err := grpc.Dial(l.Addr().String(), grpc.WithTransportCredentials(local.NewCredentials()))
+	conn, err := grpc.NewClient(l.Addr().String(), grpc.WithTransportCredentials(local.NewCredentials()))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -5274,6 +5312,81 @@ func TestReconcile(t *testing.T) {
 			}
 			if err != nil {
 				return
+			}
+		})
+	}
+}
+
+// TestReconcileSubscribeError checks that Reconciler.Start does not deadlock
+// when subscribe fails synchronously before the caller calls Reconciler.Await.
+func TestReconcileSubscribeError(t *testing.T) {
+	fakeGNMI, c := newClient(t)
+	// Configure a functional translator so subscribe rejects the non-leaf query.
+	ft := &fakeFT{
+		inPath:  testutil.GNMIPath(t, "/parent/child/state/one"),
+		outPath: testutil.GNMIPath(t, "/parent/child/state/two"),
+	}
+
+	tests := []struct {
+		// desc describes the test case.
+		desc string
+		// inSubscribeErr is the error that fakeGNMI returns from Subscribe.
+		inSubscribeErr error
+		// inOpts contains the options passed to NewReconciler.
+		inOpts []ygnmi.Option
+		// wantCode is the gRPC status code that Reconciler.Await should return.
+		wantCode codes.Code
+		// wantErrSubstring is the error substring that Reconciler.Await should return.
+		wantErrSubstring string
+	}{{
+		desc:             "subscribe RPC unavailable",
+		inSubscribeErr:   status.Error(codes.Unavailable, "target unavailable"),
+		wantCode:         codes.Unavailable,
+		wantErrSubstring: "gNMI failed to Subscribe",
+	}, {
+		desc:             "unsupported use get option",
+		inOpts:           []ygnmi.Option{ygnmi.WithUseGet()},
+		wantCode:         codes.Unknown,
+		wantErrSubstring: "using gnmi.Get is only valid for ONCE subscriptions",
+	}, {
+		desc:             "unsupported functional translator on non-leaf query",
+		inOpts:           []ygnmi.Option{ygnmi.WithFT(ft)},
+		wantCode:         codes.Unknown,
+		wantErrSubstring: "functional translators only support leaf queries",
+	}}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			fakeGNMI.Stub().SubscribeError(tt.inSubscribeErr)
+
+			r, err := ygnmi.NewReconciler(c, exampleocpath.Root().Parent().Child().Config(), tt.inOpts...)
+			if err != nil {
+				t.Fatalf("NewReconciler(...): did not get expected error, got: %v, want: nil", err)
+			}
+
+			// Run Start and Await in a goroutine so the test fails after 1 second
+			// if Start blocks on errCh.
+			errCh := make(chan error, 1)
+			ctx := t.Context()
+			go func() {
+				r.Start(ctx, func(cfg, state *ygnmi.Value[*exampleoc.Parent_Child]) error {
+					return nil
+				})
+				errCh <- r.Await()
+			}()
+
+			var gotErr error
+			select {
+			case gotErr = <-errCh:
+			case <-time.After(time.Second):
+				t.Fatalf("Reconciler.Start(...): did not complete within 1s before Reconciler.Await()")
+			}
+
+			if gotCode := status.Code(gotErr); gotCode != tt.wantCode {
+				t.Errorf("Reconciler.Await(): did not get expected status code, got: %v, want: %v (err: %v)", gotCode, tt.wantCode, gotErr)
+			}
+			if diff := errdiff.Substring(gotErr, tt.wantErrSubstring); diff != "" {
+				t.Errorf("Reconciler.Await(): did not get expected error, %s", diff)
 			}
 		})
 	}

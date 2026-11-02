@@ -59,9 +59,9 @@ func StartGNMI(port int) (*FakeGNMI, error) {
 }
 
 // Dial dials the fake gNMI client and returns a gNMI client stub.
-func (g *FakeGNMI) Dial(ctx context.Context, opts ...grpc.DialOption) (gpb.GNMIClient, error) {
+func (g *FakeGNMI) Dial(opts ...grpc.DialOption) (gpb.GNMIClient, error) {
 	opts = append(opts, grpc.WithTransportCredentials(local.NewCredentials()))
-	conn, err := grpc.DialContext(ctx, g.agent.Address(), opts...)
+	conn, err := grpc.NewClient(g.agent.Address(), opts...)
 	if err != nil {
 		return nil, errors.Wrapf(err, "DialContext(%s, %v)", g.agent.Address(), opts)
 	}
@@ -72,6 +72,8 @@ func (g *FakeGNMI) Dial(ctx context.Context, opts ...grpc.DialOption) (gpb.GNMIC
 // Stub reset the stubbed responses to empty and returns a handle to add new ones.
 func (g *FakeGNMI) Stub() *Stubber {
 	g.stub.gen.Reset()
+	// Clear any stubbed Subscribe error from a previous test case.
+	g.stub.subscribeErr = nil
 	return g.stub
 }
 
@@ -115,9 +117,14 @@ func (g *clientWrap) Get(ctx context.Context, req *gpb.GetRequest, _ ...grpc.Cal
 	return resp, err
 }
 
-// Subscribe is a wrapper of the fake implementation of gnmi.Subscribe.
+// Subscribe wraps the fake implementation of gnmi.Subscribe. It returns an
+// error if the caller configured one with Stubber.SubscribeError.
 func (g *clientWrap) Subscribe(ctx context.Context, opts ...grpc.CallOption) (gpb.GNMI_SubscribeClient, error) {
 	g.requestValues = ygnmi.FromContext(ctx)
+	// Return the stubbed error directly to simulate a Subscribe RPC failure.
+	if g.stub.subscribeErr != nil {
+		return nil, g.stub.subscribeErr
+	}
 	return g.GNMIClient.Subscribe(ctx, opts...)
 }
 
@@ -126,6 +133,15 @@ type Stubber struct {
 	gen          *fpb.FixedGenerator
 	getResponses []*gpb.GetResponse
 	getErrs      []error
+	// subscribeErr is the error that clientWrap.Subscribe returns when non-nil.
+	subscribeErr error
+}
+
+// SubscribeError configures subsequent Subscribe RPC calls to return err and
+// returns the receiver Stubber.
+func (s *Stubber) SubscribeError(err error) *Stubber {
+	s.subscribeErr = err
+	return s
 }
 
 // Notification appends the given notification as a stub response.

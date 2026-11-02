@@ -854,7 +854,7 @@ func getNodeDataMap(ir *ygen.IR, fakeRootName, schemaStructPkgAccessor, pathStru
 			nodeData.PathOriginName = origin
 
 			switch {
-			case !isLeaf && isKeyedList(fieldDir) && !(generateAtomicLists && isCompressedAtomicList(fieldDir)): // Non-atomic lists
+			case !isLeaf && isKeyedList(fieldDir) && (!generateAtomicLists || !isCompressedAtomicList(fieldDir)): // Non-atomic lists
 				// Generate path to list element.
 				nodeDataMap[pathStructName] = &nodeData
 				fallthrough // Generate Map-suffixed PathStruct
@@ -1356,7 +1356,7 @@ func generateChildConstructors(methodBuf *strings.Builder, builderBuf *strings.B
 			return errs
 		}
 		return nil
-	case field.Type == ygen.ListNode && !(generateAtomicLists && isCompressedAtomicList(fieldDirectory)): // non-atomic keyed lists
+	case field.Type == ygen.ListNode && (!generateAtomicLists || !isCompressedAtomicList(fieldDirectory)): // non-atomic keyed lists
 		if generateWildcardPaths {
 			if errs := generateChildConstructorsForListBuilderFormat(methodBuf, builderBuf, fieldDirectory.ListKeys, fieldDirectory.ListKeyYANGNames, fieldData, isUnderFakeRoot, schemaStructPkgAccessor); len(errs) > 0 {
 				return errs
